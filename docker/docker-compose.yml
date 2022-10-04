@@ -1,0 +1,50 @@
+version: '3.7'
+services:
+  nginx-test:
+    image: umputun/nginx-le:latest
+    container_name: test-nginx
+    ports:
+      - "8086:80"
+    volumes:
+      - ../src:/var/www
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    networks:
+      -  api-test-local
+
+  php-test:
+    build:
+      context: php
+    container_name: test-php
+    volumes:
+      - ../src/:/var/www
+      - ./php/conf.d/xdebug.ini:/usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+      - ./php/conf.d/error_reporting.ini:/usr/local/etc/php/conf.d/error_reporting.ini
+    networks:
+      - api-test-local
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  db-test:
+    image: postgres:13.4-alpine
+    container_name: test-db
+    volumes:
+      - ../storages/postgres:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    networks:
+      - api-test-local
+    ports:
+      - "5435:5432"
+
+  composer-installation-test:
+    container_name: composer-installation-test
+    image: composer
+    volumes:
+      - ../src:/var/www
+    working_dir: /var/www
+    command: composer install --ignore-platform-reqs
+
+networks:
+  api-test-local:
